@@ -5,3 +5,19 @@
 type Query {
   getHello: String!
 }
+
+type Mutation {
+  signUp(signUpInput: SignUpInput!): String!
+  signIn(signInInput: SignInInput!): String!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  passwordConfirm: String!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}

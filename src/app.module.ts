@@ -5,6 +5,7 @@ import { join } from 'path';
 
 import { AppResolver } from './app.resolver';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AppService } from './app.service';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
     }),
+    AuthModule,
   ],
   providers: [AppResolver, AppService],
 })
