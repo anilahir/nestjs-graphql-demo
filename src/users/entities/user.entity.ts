@@ -1,5 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Exclude } from 'class-transformer';
+import { Field, HideField, ID, ObjectType } from '@nestjs/graphql';
 import {
   Column,
   CreateDateColumn,
@@ -20,7 +19,7 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Exclude({ toPlainOnly: true })
+  @HideField()
   @Column()
   password: string;
 
