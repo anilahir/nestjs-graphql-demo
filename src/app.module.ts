@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import appConfig from './common/config/app.config';
 import databaseConfig from './common/config/database.config';
 import jwtConfig from './common/config/jwt.config';
+import redisConfig from './common/config/redis.config';
 import { validate } from './common/validation/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './redis/redis.module';
@@ -21,7 +22,7 @@ import { UsersModule } from './users/users.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, jwtConfig, databaseConfig],
+      load: [appConfig, jwtConfig, databaseConfig, redisConfig],
       validate,
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
