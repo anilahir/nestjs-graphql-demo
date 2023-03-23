@@ -1,0 +1,76 @@
+services:
+  nestjs-graphql-api:
+    container_name: nestjs-graphql-api
+    image: nestjs-graphql-api
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development # Only will build development stage from our dockerfile
+    volumes:
+      - ./:/usr/src/app
+    ports:
+      - ${PORT}:${PORT}
+    networks:
+      - nestjs-graphql-intranet
+    env_file: 
+      - .env # Available inside container not in compose file
+    environment:
+      - DB_HOST=nestjs-graphql-mysql
+      - REDIS_HOST=nestjs-graphql-redis
+    depends_on:
+      nestjs-graphql-mysql:
+        condition: service_healthy
+      nestjs-graphql-redis:
+        condition: service_healthy
+    command: npm run start:dev # Run in development mode
+
+  nestjs-graphql-mysql:
+    container_name: nestjs-graphql-mysql
+    image: mysql:8.0
+    restart: unless-stopped
+    volumes:
+      - mysql:/var/lib/mysql
+    ports:
+      - 3307:${DB_PORT}
+    networks:
+      - nestjs-graphql-intranet
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: 'utc'
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ['CMD', 'mysqladmin', '-u${DB_USER}', '-p${DB_PASSWORD}', 'ping']
+      interval: 5s
+      retries: 3
+      timeout: 3s
+
+  nestjs-graphql-redis:
+    container_name: nestjs-graphql-redis
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    ports:
+      - 6380:${REDIS_PORT}
+    networks:
+      - nestjs-graphql-intranet
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 3
+      timeout: 3s
+
+volumes:
+  mysql:
+    name: nestjs-graphql-mysql
+  redis:
+    name: nestjs-graphql-redis
+
+networks:
+  nestjs-graphql-intranet:
+    name: nestjs-graphql-intranet
+    driver: bridge
