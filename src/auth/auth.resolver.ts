@@ -1,5 +1,7 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { ActiveUser } from '../common/decorators/active-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { User } from '../users/entities/user.entity';
 
 import { AuthService } from './auth.service';
 import { SignInInput } from './dto/sign-in.input';
@@ -20,5 +22,10 @@ export class AuthResolver {
   @Mutation(() => AuthToken, { name: 'signIn' })
   async signIn(@Args('signInInput') signInInput: SignInInput) {
     return this.authService.signIn(signInInput);
+  }
+
+  @Mutation(() => User, { name: 'signOut', nullable: true })
+  signOut(@ActiveUser('id') userId: string) {
+    return this.authService.signOut(userId);
   }
 }

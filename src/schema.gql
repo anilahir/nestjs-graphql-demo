@@ -36,6 +36,7 @@ type Query {
 type Mutation {
   signUp(signUpInput: SignUpInput!): AuthToken!
   signIn(signInInput: SignInInput!): AuthToken!
+  signOut: User
 }
 
 input SignUpInput {

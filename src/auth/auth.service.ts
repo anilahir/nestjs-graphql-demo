@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import jwtConfig from '../common/config/jwt.config';
 import { MysqlErrorCode } from '../common/enums/error-codes.enum';
 import { ActiveUserData } from '../common/interfaces/active-user-data.interface';
+import { RedisService } from '../redis/redis.service';
 import { User } from '../users/entities/user.entity';
 import { BcryptService } from './bcrypt.service';
 import { SignInInput } from './dto/sign-in.input';
@@ -24,6 +25,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly bcryptService: BcryptService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
   ) {}
 
   async signUp(signUpInput: SignUpInput) {
@@ -35,18 +37,7 @@ export class AuthService {
       user.password = await this.bcryptService.hash(password);
       await this.userRepository.save(user);
 
-      const accessToken = await this.jwtService.signAsync(
-        {
-          id: user.id,
-          email: user.email,
-        } as ActiveUserData,
-        {
-          expiresIn: this.jwtConfiguration.accessTokenTtl,
-          secret: this.jwtConfiguration.secret,
-        },
-      );
-
-      return { ...user, accessToken };
+      return this.generateAuthToken(user);
     } catch (error) {
       if (error.code === MysqlErrorCode.UniqueViolation) {
         throw new ApolloError(`User [${email}] already exist`, 'CONFLICT');
@@ -75,14 +66,27 @@ export class AuthService {
       throw new UserInputError('Invalid password');
     }
 
+    return this.generateAuthToken(user);
+  }
+
+  async signOut(userId: string) {
+    this.redisService.delete(`user-${userId}`);
+  }
+
+  async generateAuthToken(user: Partial<User>) {
+    const tokenId = randomUUID();
+
+    await this.redisService.insert(`user-${user.id}`, tokenId);
+
     const accessToken = await this.jwtService.signAsync(
       {
         id: user.id,
         email: user.email,
+        tokenId,
       } as ActiveUserData,
       {
-        expiresIn: this.jwtConfiguration.accessTokenTtl,
         secret: this.jwtConfiguration.secret,
+        expiresIn: this.jwtConfiguration.accessTokenTtl,
       },
     );
 

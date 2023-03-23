@@ -14,6 +14,7 @@ import { Request } from 'express';
 import jwtConfig from '../../common/config/jwt.config';
 import { REQUEST_USER_KEY } from '../../common/constants';
 import { ActiveUserData } from '../../common/interfaces/active-user-data.interface';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -21,6 +22,7 @@ export class JwtAuthGuard implements CanActivate {
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
     private reflector: Reflector,
   ) {}
 
@@ -44,6 +46,14 @@ export class JwtAuthGuard implements CanActivate {
         token,
         this.jwtConfiguration,
       );
+
+      const isValidToken = await this.redisService.validate(
+        `user-${payload.id}`,
+        payload.tokenId,
+      );
+      if (!isValidToken) {
+        throw new AuthenticationError('Authorization token is not valid');
+      }
 
       req[REQUEST_USER_KEY] = payload;
     } catch (error) {

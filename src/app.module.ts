@@ -14,6 +14,7 @@ import databaseConfig from './common/config/database.config';
 import jwtConfig from './common/config/jwt.config';
 import { validate } from './common/validation/env.validation';
 import { DatabaseModule } from './database/database.module';
+import { RedisModule } from './redis/redis.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
     }),
     DatabaseModule,
+    RedisModule,
     AuthModule,
     UsersModule,
   ],
