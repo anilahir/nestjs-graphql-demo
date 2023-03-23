@@ -14,5 +14,6 @@ import { User } from '../users/entities/user.entity';
     TypeOrmModule.forFeature([User]),
   ],
   providers: [AuthResolver, AuthService, BcryptService],
+  exports: [JwtModule],
 })
 export class AuthModule {}
