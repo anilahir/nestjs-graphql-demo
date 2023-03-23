@@ -2,9 +2,13 @@ import { UserInputError } from '@nestjs/apollo';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ApolloError } from 'apollo-server-express';
 import { randomUUID } from 'crypto';
+import { Repository } from 'typeorm';
 
 import jwtConfig from '../common/config/jwt.config';
+import { MysqlErrorCode } from '../common/enums/error-codes.enum';
 import { User } from '../users/entities/user.entity';
 import { BcryptService } from './bcrypt.service';
 import { SignInInput } from './dto/sign-in.input';
@@ -12,11 +16,11 @@ import { SignUpInput } from './dto/sign-up.input';
 
 @Injectable()
 export class AuthService {
-  private users: User[] = [];
-
   constructor(
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly bcryptService: BcryptService,
     private readonly jwtService: JwtService,
   ) {}
@@ -24,34 +28,40 @@ export class AuthService {
   async signUp(signUpInput: SignUpInput) {
     const { email, password } = signUpInput;
 
-    const hashedPassword = await this.bcryptService.hash(password);
+    try {
+      const user = new User();
+      user.email = email;
+      user.password = await this.bcryptService.hash(password);
+      await this.userRepository.save(user);
 
-    const user = {
-      id: randomUUID(),
-      email,
-      password: hashedPassword,
-    };
+      const accessToken = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          email: user.email,
+        },
+        {
+          expiresIn: this.jwtConfiguration.accessTokenTtl,
+          secret: this.jwtConfiguration.secret,
+        },
+      );
 
-    this.users.push(user);
-
-    const accessToken = await this.jwtService.signAsync(
-      {
-        sub: user.id,
-        email: user.email,
-      },
-      {
-        expiresIn: this.jwtConfiguration.accessTokenTtl,
-        secret: this.jwtConfiguration.secret,
-      },
-    );
-
-    return { ...user, accessToken };
+      return { ...user, accessToken };
+    } catch (error) {
+      if (error.code === MysqlErrorCode.UniqueViolation) {
+        throw new ApolloError(`User [${email}] already exist`, 'CONFLICT');
+      }
+      throw error;
+    }
   }
 
   async signIn(signInInput: SignInInput) {
     const { email, password } = signInInput;
 
-    const user = this.users.find((user) => user.email === email);
+    const user = await this.userRepository.findOne({
+      where: {
+        email,
+      },
+    });
     if (!user) {
       throw new UserInputError('Invalid email');
     }
