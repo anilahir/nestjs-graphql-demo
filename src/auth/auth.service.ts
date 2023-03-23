@@ -1,8 +1,10 @@
 import { UserInputError } from '@nestjs/apollo';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 
+import jwtConfig from '../common/config/jwt.config';
 import { User } from '../users/entities/user.entity';
 import { BcryptService } from './bcrypt.service';
 import { SignInInput } from './dto/sign-in.input';
@@ -13,6 +15,8 @@ export class AuthService {
   private users: User[] = [];
 
   constructor(
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly bcryptService: BcryptService,
     private readonly jwtService: JwtService,
   ) {}
@@ -36,8 +40,8 @@ export class AuthService {
         email: user.email,
       },
       {
-        expiresIn: 3600,
-        secret: 'super-secret',
+        expiresIn: this.jwtConfiguration.accessTokenTtl,
+        secret: this.jwtConfiguration.secret,
       },
     );
 
@@ -66,8 +70,8 @@ export class AuthService {
         email: user.email,
       },
       {
-        expiresIn: 3600,
-        secret: 'super-secret',
+        expiresIn: this.jwtConfiguration.accessTokenTtl,
+        secret: this.jwtConfiguration.secret,
       },
     );
 
