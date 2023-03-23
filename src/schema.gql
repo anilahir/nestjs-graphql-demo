@@ -2,13 +2,22 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+"""Auth Token Model"""
+type AuthToken {
+  """Unique Identifier"""
+  id: ID!
+  email: String!
+  password: String!
+  accessToken: String!
+}
+
 type Query {
   getHello: String!
 }
 
 type Mutation {
-  signUp(signUpInput: SignUpInput!): String!
-  signIn(signInInput: SignInInput!): String!
+  signUp(signUpInput: SignUpInput!): AuthToken!
+  signIn(signInInput: SignInInput!): AuthToken!
 }
 
 input SignUpInput {

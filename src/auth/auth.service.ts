@@ -1,5 +1,6 @@
 import { UserInputError } from '@nestjs/apollo';
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 
 import { User } from '../users/entities/user.entity';
@@ -11,7 +12,10 @@ import { SignUpInput } from './dto/sign-up.input';
 export class AuthService {
   private users: User[] = [];
 
-  constructor(private readonly bcryptService: BcryptService) {}
+  constructor(
+    private readonly bcryptService: BcryptService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async signUp(signUpInput: SignUpInput) {
     const { email, password } = signUpInput;
@@ -26,7 +30,18 @@ export class AuthService {
 
     this.users.push(user);
 
-    return 'User signed up successfully';
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      {
+        expiresIn: 3600,
+        secret: 'super-secret',
+      },
+    );
+
+    return { ...user, accessToken };
   }
 
   async signIn(signInInput: SignInInput) {
@@ -45,6 +60,17 @@ export class AuthService {
       throw new UserInputError('Invalid password');
     }
 
-    return 'User signed in successfully';
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      {
+        expiresIn: 3600,
+        secret: 'super-secret',
+      },
+    );
+
+    return { ...user, accessToken };
   }
 }
